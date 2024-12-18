@@ -33,11 +33,36 @@ def match_cases(case_facts):
 # Generate AI recommendations
 def recommend_steps_with_gemini(case_description):
     try:
+        # Explicitly instruct the AI to format output as bullet points
         model = genai.GenerativeModel("gemini-1.0-pro")
-        response = model.generate_content(f"Provide recommendations for the following legal case: {case_description}")
-        return response.text
+        prompt = (
+            "Provide clear and concise recommendations in bullet point format for the following legal case. "
+            "Start each recommendation with a dash (-) or bullet point, one per line:\n"
+            f"{case_description}"
+        )
+        response = model.generate_content(prompt)
+        
+        # Post-process the response to extract bullet points
+        recommendations = response.text.splitlines()
+        
+        # Ensure all valid lines are treated as bullet points
+        formatted_recommendations = []
+        for line in recommendations:
+            line = line.strip()
+            if line.startswith("-") or line.startswith("*"):
+                formatted_recommendations.append(f" ---{line.lstrip('-*').strip()}---")
+            elif line:  # Handle lines that are missing bullets
+                formatted_recommendations.append(f"---{line.strip()}---")
+
+        # Return as an unordered HTML list
+        if formatted_recommendations:
+            return "<ul>" + "".join(formatted_recommendations) + "</ul>"
+        else:
+            return "<p>No recommendations were generated.</p>"
+
     except Exception as e:
-        return "The system is processing your request. Please try again later."
+        print(f"Error: {e}")
+        return "<p>The system is processing your request. Please try again later.</p>"
 
 # Frontend templates using render_template_string
 landing_page_template = """
@@ -46,47 +71,125 @@ landing_page_template = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Case Assistance System</title>
+    <title>LegalMind AI</title>
     <style>
-        body {
+        body, html {
             margin: 0;
+            padding: 0;
             font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
+            background-color: #F7F9FC;
+            color: #333;
+            overflow-x: hidden;
+        }
+        .header {
+            background: #0052CC;
+            color: white;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { margin: 0; font-size: 1.8rem; }
+        .header a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            margin-left: 20px;
+        }
+        .main-banner {
+            background: linear-gradient(to right, #0052CC, #0077FF);
+            color: white;
+            padding: 100px 0;
             text-align: center;
         }
-        .landing {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            background-color: black;
-            animation: fadeIn 2s ease-in-out;
+        .main-banner h1 {
+            font-size: 3rem;
+            margin: 0;
+            margin-bottom: 10px;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .main-banner p {
+            font-size: 1.2rem;
+            margin: 0 auto;
+            max-width: 700px;
+            line-height: 1.6;
         }
-        .app-title { font-size: 3rem; color: #f5f5f5; }
-        .description { font-size: 1.2rem; color: #aaa; margin-bottom: 2rem; }
-        form {
+        .btn-group {
+            margin-top: 20px;
+        }
+        .btn {
             display: inline-block;
-            text-align: left;
-            background: #333;
-            padding: 1.5rem;
+            padding: 10px 20px;
+            background: #FFC107;
+            color: black;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn:hover { background: #E0A800; }
+        .form-container {
+            padding: 50px;
+            background: #FFFFFF;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            margin: 30px auto;
             border-radius: 8px;
         }
-        label, textarea, select { display: block; margin: 1rem 0; width: 100%; }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
         button {
-            background: #008080; color: #fff; border: none;
-            padding: 10px 20px; cursor: pointer;
+            background-color: #0052CC;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0041A8;
         }
     </style>
 </head>
 <body>
-    <div class="landing">
-        <h1 class="app-title">Case Assistance System</h1>
-        <p class="description">Get lawyer recommendations, similar cases, and AI-powered solutions</p>
+    <!-- Header -->
+    <div class="header">
+        <h1>LegalMind AI</h1>
+        <div>
+            <a href="#">Home</a>
+            <a href="#">Features</a>
+            <a href="#">About Us</a>
+            <a href="#">Contact Us</a>
+            <a href="/login">Login</a>
+            <a href="/signup">Sign Up</a>
+        </div>
+    </div>
+
+    <!-- Main Banner -->
+    <div class="main-banner">
+        <h1>Your AI Legal Advisor: Predict, Analyze, and Succeed</h1>
+        <p>
+            Harness the power of AI to predict case outcomes, find the right lawyer, 
+            and compare your case with relevant historical data. Simplify legal research 
+            and decision-making for individuals, businesses, and legal professionals in Pakistan.
+        </p>
+        <div class="btn-group">
+            <a href="#" class="btn">Try Now for Free</a>
+            <a href="#" class="btn">Learn More</a>
+        </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="form-container">
+        <h2>Get Started</h2>
         <form method="POST" action="/">
             <label for="case_type">Select Case Type:</label>
             <select name="case_type" id="case_type" required>
@@ -95,35 +198,59 @@ landing_page_template = """
                 <option value="family">Family</option>
                 <option value="property">Property</option>
             </select>
+
             <label for="case_facts">Describe Your Case:</label>
-            <textarea name="case_facts" id="case_facts" rows="4" required></textarea>
+            <textarea name="case_facts" id="case_facts" rows="5" placeholder="Enter your case details..." required></textarea>
             <button type="submit">Submit</button>
         </form>
     </div>
 </body>
 </html>
 """
-
 results_page_template = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Results</title>
+    <title>Results - LegalMind AI</title>
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; background-color: #121212; color: #fff; text-align: center; }
-        table { margin: 2rem auto; border-collapse: collapse; width: 80%; }
-        th, td { border: 1px solid #fff; padding: 10px; text-align: center; }
-        h1, h2 { margin: 1rem 0; }
-        .ai-box { background: #333; padding: 1rem; border-radius: 8px; display: inline-block; margin-top: 1rem; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #F7F9FC;
+            color: #333;
+            text-align: center;
+        }
+        h1 { margin-top: 30px; color: #0052CC; }
+        table {
+            width: 90%;
+            margin: 30px auto;
+            border-collapse: collapse;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #0052CC;
+            color: white;
+        }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .ai-box {
+            margin: 20px auto;
+            background: #FFF;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
     <h1>Results</h1>
-    
-    <!-- Lawyer Results -->
-    {% if lawyers %}
     <h2>Matching Lawyers</h2>
     <table>
         <tr><th>Name</th><th>Specialization</th><th>Phone</th><th>Email</th></tr>
@@ -136,12 +263,7 @@ results_page_template = """
         </tr>
         {% endfor %}
     </table>
-    {% else %}
-    <p>No matching lawyers found.</p>
-    {% endif %}
 
-    <!-- Similar Cases -->
-    {% if cases %}
     <h2>Similar Cases</h2>
     <table>
         <tr><th>Case Name</th><th>Decision Type</th><th>Decision Direction</th></tr>
@@ -153,11 +275,7 @@ results_page_template = """
         </tr>
         {% endfor %}
     </table>
-    {% else %}
-    <p>No similar cases found.</p>
-    {% endif %}
 
-    <!-- AI Recommendations -->
     <h2>AI Recommendations</h2>
     <div class="ai-box">
         <p>{{ recommendations }}</p>
@@ -165,7 +283,6 @@ results_page_template = """
 </body>
 </html>
 """
-
 # Flask Routes
 @app.route("/", methods=["GET", "POST"])
 def index():
