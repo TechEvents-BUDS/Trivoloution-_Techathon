@@ -56,13 +56,13 @@ def recommend_steps_with_gemini(case_description):
 
         # Return as an unordered HTML list
         if formatted_recommendations:
-            return "<ul>" + "".join(formatted_recommendations) + "</ul>"
+            return "  " + "".join(formatted_recommendations) + "   "
         else:
-            return "<p>No recommendations were generated.</p>"
+            return "  No recommendations were generated. --"
 
     except Exception as e:
         print(f"Error: {e}")
-        return "<p>The system is processing your request. Please try again later.</p>"
+        return "  The system is processing your request. Please try again later. "
 
 # Frontend templates using render_template_string
 landing_page_template = """
